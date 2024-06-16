@@ -21,7 +21,7 @@ fn main(){
         print!(">");
         let _ = stdout().flush();
         let mut quest = String::new();
-        std::io::stdin().read_line(&mut quest).unwrap();
+        std::io::stdin().read_line(&mut quest).expect("an error occurred while reading input");
 
         match quest.trim() {
             "mdir" | "mkdir" | "ndir" | "newdir" =>{
@@ -29,24 +29,24 @@ fn main(){
                 print!(">");
                 let _ = stdout().flush();
                 let mut args = String::new();
-                std::io::stdin().read_line(&mut args).unwrap();
+                std::io::stdin().read_line(&mut args).expect("an error occurred while reading input");
 
                 println!("enter number of folders"); // to dla Pana Pietrzaka
                 print!(">");
                 let _ = stdout().flush();
 
                 let mut quantity = String::new();
-                std::io::stdin().read_line(&mut quantity).expect("error");
-                let quantity: i32 = quantity.trim().parse().expect("error");
+                std::io::stdin().read_line(&mut quantity).expect("an error occurred while reading user input");
+                let quantity: i32 = quantity.trim().parse().expect("an error occurred while converting user input");
 
                 if quest.trim() != ""{
                     if quantity == 1{
-                        fs::create_dir_all(args.trim()).unwrap();
+                        fs::create_dir_all(args.trim()).expect("error while creating directory");
                     }
                     else {
                         for i in 1..quantity + 1 {
                             let path: String = args.trim().to_owned() + &i.to_string();
-                            fs::create_dir_all(path).unwrap();
+                            fs::create_dir_all(path).expect("error while creating directory");
                         }
                     }
                 }
@@ -60,32 +60,32 @@ fn main(){
                 let _ = stdout().flush();
 
                 let mut args = String::new();
-                std::io::stdin().read_line(&mut args).unwrap();
+                std::io::stdin().read_line(&mut args).expect("an error occurred while reading input");
 
                 println!("enter extension of the file e.g. txt or exe");
                 print!(">");
                 let _ = stdout().flush();
 
                 let mut extension = String::new();
-                std::io::stdin().read_line(&mut extension).unwrap();
+                std::io::stdin().read_line(&mut extension).expect("an error occurred while reading input");
 
                 println!("enter number of files");
                 print!(">");
                 let _ = stdout().flush();
 
                 let mut quantity = String::new();
-                std::io::stdin().read_line(&mut quantity).expect("error");
-                let quantity: i32 = quantity.trim().parse().expect("error");
+                std::io::stdin().read_line(&mut quantity).expect("an error occurred while taking user input");
+                let quantity: i32 = quantity.trim().parse().expect("an error occurred while converting user input");
 
                 if args.trim() != "" {
                     if quantity == 1 {
                         let path = args.trim().to_owned() + stringify!(.) + extension.trim();
-                        fs::File::create_new(path).unwrap();
+                        fs::File::create_new(path).expect("error while creating file");
                     }
                     else {
                         for i in 1..quantity + 1 {
                             let path = args.trim().to_owned() + &i.to_string() + stringify!(.) + extension.trim();
-                            fs::File::create_new(path).unwrap();
+                            fs::File::create_new(path).expect("error while creating file");
                         }
                     }
                 }
@@ -100,10 +100,10 @@ fn main(){
                 let _ = stdout().flush();
 
                 let mut args = String::new();
-                std::io::stdin().read_line(&mut args).unwrap();
+                std::io::stdin().read_line(&mut args).expect("error while reading user input");
 
                 if args.trim() != "" {
-                    fs::remove_file(args.trim()).unwrap();
+                    fs::remove_file(args.trim()).expect("error while removing file");
                 }
                 else {
                     println!("invalid option! you can't leave this empty!");
@@ -114,7 +114,7 @@ fn main(){
                 print!(">");
                 let _ = stdout().flush();
                 let mut args = String::new();
-                std::io::stdin().read_line(&mut args).unwrap();
+                std::io::stdin().read_line(&mut args).expect("error while reading user input");
 
                 if args.trim() == "/" || args.trim() == "*" {
                     println!("are you sure you want to do this? executing this command will erase all data on disk yes/no ");
@@ -122,18 +122,18 @@ fn main(){
                     let _ = stdout().flush();
 
                     let mut quest = String::new();
-                    std::io::stdin().read_line(&mut quest).unwrap();
+                    std::io::stdin().read_line(&mut quest).expect("error while reading user input");
                     let quest = quest.trim().to_uppercase();
 
                     if quest == "YES" {
-                        fs::remove_dir_all(args.trim()).unwrap(); //usuwa / albo C:\ więc lepiej wara od tego
+                        fs::remove_dir_all(args.trim()).expect("an error occurred while deleting system partition (thank God)"); //usuwa / albo C:\ więc lepiej wara od tego
                     }
                     else {
                         println!("aborting thread");
                     }
                 }
                 else if !(args.trim() == "") {
-                    fs::remove_dir_all(args.trim()).unwrap();
+                    fs::remove_dir_all(args.trim()).expect("error while deleting directory");
                 }
                 else {
                     println!("error! you can't leave this blank")
@@ -145,18 +145,18 @@ fn main(){
                 let _ = stdout().flush();
 
                 let mut args = String::new();
-                std::io::stdin().read_line(&mut args).unwrap();
+                std::io::stdin().read_line(&mut args).expect("error while reading user input");
 
                 if !(args.trim() == ""){
-                    std::env::set_current_dir(args.trim()).unwrap();
+                    std::env::set_current_dir(args.trim()).expect("an error occurred during changing working directory");
                 }
                 else {
                     println!("error! you can't leave this blank!");
                 }
             },
             "pwd" | "here" | "whereami" =>{
-              let current_dir = std::env::current_dir();
-              println!("working direcory is {} ", current_dir.unwrap().display());
+              let current_dir = current_dir();
+              println!("working direcory is {} ", current_dir.expect("error - cannot get working directory").display());
             },
             "list" | "ls" | "listfiles" | "lsdir" | "listdirectory" =>{
                 println!("which directory do you want to list? (leave blank for current)");
@@ -164,18 +164,18 @@ fn main(){
                 let _ = stdout().flush();
 
                 let mut args = String::new();
-                std::io::stdin().read_line(&mut args).unwrap();
+                std::io::stdin().read_line(&mut args).expect("an error occurred while reading input");
 
                 if args.trim() == "" {
-                    let path = fs::read_dir(std::env::current_dir().unwrap()).unwrap();
+                    let path = read_dir(current_dir().expect("an error occurred while getting current directory")).expect("error - cannot list current directory");
                     for files in path{
                         println!("Name: {}", files.unwrap().path().display());
                     }
                 }
                 else {
-                    let path = fs::read_dir(args.trim()).unwrap();
+                    let path = read_dir(args.trim()).expect("error - cannot read this directory");
                     for files in path{
-                      println!("name: {}", files.unwrap().path().display());
+                      println!("name: {}", files.expect("an error occurred while trying to read this file").path().display());
                   }
                 }
             },
@@ -185,7 +185,7 @@ fn main(){
                 let _ = stdout().flush();
 
                 let mut path = String::new();
-                std::io::stdin().read_line(&mut path).expect("error");
+                std::io::stdin().read_line(&mut path).expect("error during taking input from user");
                 let path = path.trim();
 
                 match fs::read_to_string(path){
@@ -199,7 +199,7 @@ fn main(){
                 let _ = stdout().flush();
 
                 let mut args1 = String::new();
-                std::io::stdin().read_line(&mut args1).expect("error");
+                std::io::stdin().read_line(&mut args1).expect("an error occurred while taking user input");
                 let args1 = args1.trim();
 
                 println!("enter target filename");
@@ -207,10 +207,10 @@ fn main(){
                 let _ = stdout().flush();
 
                 let mut args2 = String::new();
-                std::io::stdin().read_line(&mut args2).expect("error");
+                std::io::stdin().read_line(&mut args2).expect("error while reading user input");
                 let args2 = args2.trim();
 
-                let _ = fs::rename(args1, args2);
+                rename(args1, args2).expect("an error occurred while renaming file");
             },
             "whoami" | "info" | "who" =>{
                 println!("here is your hardware and software info:");
@@ -223,7 +223,7 @@ fn main(){
                 // thread::sleep(Duration::from_millis(50));
                 println!("device's name: {}",whoami::devicename());
                 thread::sleep(Duration::from_millis(50));
-                match whoami::fallible::hostname(){
+                match fallible::hostname(){
                     Ok(hostname) => println!("device's hostname {}",hostname),
                     Err(error) => println!("error while reading hostname: {}",error)
                 }
@@ -235,13 +235,19 @@ fn main(){
                 println!("device's desktop environment: {}",whoami::desktop_env());
                 thread::sleep(Duration::from_millis(50));
                 println!("CPU architecture: {}",whoami::arch());
+                thread::sleep(Duration::from_millis(50));
+                let disks = sysinfo::Disks::new_with_refreshed_list();
+                println!("disks:",);
+                for disk in &disks{
+                    println!(" disk: {:?}",disk)
+                }
             }
             "time" | "clock" =>{
                 let current_time: DateTime<Local> = Local::now(); // chuj wie jak działa ale działa więc nie dotykać tego
                 println!("current time is {:?}", current_time);
             },
             "leave" | "exit" | "close" =>{
-                process::exit(0);
+                exit(0);
             },
             "clear" | "cls" =>{
                 clear_screen();
