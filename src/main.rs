@@ -3,25 +3,29 @@
 // teraz tylko Bóg wie
 // jebać debiana arch najlepszy
 use std::process::{Command, exit};
-use std::{fs, process, thread};
+use std::{fs, process, thread, vec};
 use std::env::{args, current_dir, current_exe};
 use std::fs::{create_dir, read_dir, rename};
-use std::io::{BufRead, Read, stdout, Write};
+use std::io::{BufRead, Read, read_to_string, stdout, Write};
 use std::iter::StepBy;
 use std::path::{Path, PathBuf};
 use std::thread::current;
 use std::time::{Duration, SystemTime};
 extern crate chrono;
 use chrono::prelude::*;
+use sysinfo::{Cpu, System};
+use sysinfo::Signal::Sys;
 extern crate whoami;
 use whoami::{fallible, platform};
 
 fn main(){
+    let mut terminal_history = vec![];
     loop {
         print!(">");
         let _ = stdout().flush();
         let mut quest = String::new();
         std::io::stdin().read_line(&mut quest).expect("an error occurred while reading input");
+        terminal_history.push(quest.clone());
 
         match quest.trim() {
             "mdir" | "mkdir" | "ndir" | "newdir" =>{
@@ -232,6 +236,16 @@ fn main(){
                 thread::sleep(Duration::from_millis(50));
                 println!("device's distro: {}",whoami::distro());
                 thread::sleep(Duration::from_millis(50));
+                match System::kernel_version(){
+                    Some(kernel_version) => println!("kernel version: {}",kernel_version),
+                    _ => println!("error occurred while reading kernel version"),
+                }
+                thread::sleep(Duration::from_millis(50));
+                match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH){ // unix najlepszy i kompatybilny ze wszystkim
+                    Ok(time) => println!("system time since UNIX epoch: {:?}",time),
+                    _ => println!("error - cannot read time"),
+                }
+                thread::sleep(Duration::from_millis(50));
                 println!("device's desktop environment: {}",whoami::desktop_env());
                 thread::sleep(Duration::from_millis(50));
                 println!("CPU architecture: {}",whoami::arch());
@@ -242,10 +256,51 @@ fn main(){
                     println!(" disk: {:?}",disk)
                 }
             }
+            "find" | "istherea" =>{
+                println!("enter name of the file you want to check");
+                print!(">");
+                let _ = stdout().flush();
+
+                let mut filename = String::new();
+                std::io::stdin().read_line(&mut filename).expect("an error occurred while taking user input");
+                let filename = filename.trim(); // skurwiel zmarnował mi kilkanaście minut życia
+
+                println!("enter phrase you want to search for");
+                print!(">");
+                let _ = stdout().flush();
+
+                let mut phrase = String::new();
+                std::io::stdin().read_line(&mut phrase).expect("an error occurred while taking user input");
+                let _ = phrase.trim();
+
+                match fs::read_to_string(filename){
+                    Ok(contains) =>{
+                        if contains.contains(&phrase) { // czasem działa czasem nie, a dlaczego chuj to wie
+                            println!("yes, {:?} contains {:?}", filename,phrase.trim());
+                        }
+                        else {
+                            println!("no, {:?} does not contain {:?}",filename,phrase.trim());
+                        }
+                    },
+                    Err(error) => println!("an error occurred while reading file {:?}, error message: {}",filename.trim(), error), // os error 123 no japierdole
+                }
+            }
             "time" | "clock" =>{
                 let current_time: DateTime<Local> = Local::now(); // chuj wie jak działa ale działa więc nie dotykać tego
                 println!("current time is {:?}", current_time);
             },
+            "history" =>{
+                println!("your terminal history contains: ");
+                let mut history_count: i128 = 0;
+                for i in &terminal_history{ //jednak kocham vektory i jebac array
+                    history_count += 1;
+                    println!("\t{}.{}",history_count,i.trim());
+                }
+                println!("if you want to clear history, type 'history clear'");
+            }
+            "history clear" =>{ // mama i tak się dowie
+                terminal_history.clear();
+            }
             "leave" | "exit" | "close" =>{
                 exit(0);
             },
@@ -253,7 +308,7 @@ fn main(){
                 clear_screen();
             },
             "help" =>{
-              println!(" leave/exit/close - exit terminal\n clear/cls - clear screen\n mkdir/mdir/ndir/newdir - creates new empty directory\n nfile/newfile/touch - make file\n rm/remove/rmfile/rfile - remove single file\n rdir/rmdir/removedir/removedirectory - removes directory with all containing files\n cd/goto - change directory\n pwd/whereami/here - show working directory\n list/ls/listfiles/lsdir/listdirectory - shows files in directory\n time/clock - displays current time\n fread/read - prints file contains\n rename/rname - renames file/folder\n whoami/info/who - displays info about hardware and software");
+              println!(" leave/exit/close - exit terminal\n clear/cls - clear screen\n mkdir/mdir/ndir/newdir - creates new empty directory\n nfile/newfile/touch - make file\n rm/remove/rmfile/rfile - remove single file\n rdir/rmdir/removedir/removedirectory - removes directory with all containing files\n cd/goto - change directory\n pwd/whereami/here - show working directory\n list/ls/listfiles/lsdir/listdirectory - shows files in directory\n time/clock - displays current time\n fread/read - prints file contains\n rename/rname - renames file/folder\n whoami/info/who - displays info about hardware and software\n history/history clear - shows/clears terminal history\n find/istherea - searches given phrase in specified file");
             },
             _ => {
                 println!("invalid option! type 'help' for full command list");
