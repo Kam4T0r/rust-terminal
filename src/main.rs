@@ -2,8 +2,10 @@
 // tylko ja i Bóg wiedzieliśmy jak działa ten kod
 // teraz tylko Bóg wie
 // jebać debiana arch najlepszy
+#[allow(unused)]
 use std::process::{Command, exit};
 use std::{fs, process, thread, vec};
+use std::arch::asm;
 use std::env::{args, current_dir, current_exe};
 use std::fs::{create_dir, read_dir, rename};
 use std::io::{BufRead, Read, read_to_string, stdout, Write};
@@ -17,6 +19,8 @@ use sysinfo::{Cpu, System};
 use sysinfo::Signal::Sys;
 extern crate whoami;
 use whoami::{fallible, platform};
+extern crate system_shutdown;
+extern crate clear_screen;
 
 fn main(){
     let mut terminal_history = vec![];
@@ -120,7 +124,7 @@ fn main(){
                 let mut args = String::new();
                 std::io::stdin().read_line(&mut args).expect("error while reading user input");
 
-                if args.trim() == "/" || args.trim() == "*" {
+                if args.trim() == "/" || args.trim() == "*" || args.trim() == r#"C:\"# || args.trim() == r#"C:\\"# { // dreams of Lars and a baked apple pie
                     println!("are you sure you want to do this? executing this command will erase all data on disk yes/no ");
                     print!(">");
                     let _ = stdout().flush();
@@ -217,6 +221,7 @@ fn main(){
                 rename(args1, args2).expect("an error occurred while renaming file");
             },
             "whoami" | "info" | "who" =>{
+                clear_screen::clear();
                 println!("here is your hardware and software info:");
                 thread::sleep(Duration::from_millis(150));
                 println!("username: {}",whoami::username());
@@ -237,7 +242,7 @@ fn main(){
                 println!("device's distro: {}",whoami::distro());
                 thread::sleep(Duration::from_millis(50));
                 match System::kernel_version(){
-                    Some(kernel_version) => println!("kernel version: {}",kernel_version),
+                    Some(kernel_version) => println!("kernel version: {}",kernel_version), // mmm kernel, mój ulubieny
                     _ => println!("error occurred while reading kernel version"),
                 }
                 thread::sleep(Duration::from_millis(50));
@@ -251,9 +256,11 @@ fn main(){
                 println!("CPU architecture: {}",whoami::arch());
                 thread::sleep(Duration::from_millis(50));
                 let disks = sysinfo::Disks::new_with_refreshed_list();
-                println!("disks:",);
+                println!("data storages:");
+                let mut count: i8 = 0;
                 for disk in &disks{
-                    println!(" disk: {:?}",disk)
+                    count+=1;
+                    println!(" {}.volume: {:?}",count,disk);
                 }
             }
             "find" | "istherea" =>{
@@ -271,7 +278,6 @@ fn main(){
 
                 let mut phrase = String::new();
                 std::io::stdin().read_line(&mut phrase).expect("an error occurred while taking user input");
-                let _ = phrase.trim();
 
                 match fs::read_to_string(filename){
                     Ok(contains) =>{
@@ -284,7 +290,29 @@ fn main(){
                     },
                     Err(error) => println!("an error occurred while reading file {:?}, error message: {}",filename.trim(), error), // os error 123 no japierdole
                 }
-            }
+            },
+            "move" | "relocate" | "mv" =>{
+                println!("enter file that you want to relocate");
+                print!(">");
+                let _ = stdout().flush();
+
+                let mut current = String::new();
+                std::io::stdin().read_line(&mut current).expect("an error occurred during input reading");
+                let current = current.trim();
+
+                println!("enter destination");
+                print!(">");
+                let _ = stdout().flush();
+
+                let mut destination = String::new();
+                std::io::stdin().read_line(&mut destination).expect("error - cannot read user input");
+                let destination = destination.trim();
+
+                match rename(current, destination){
+                    Ok(_) => println!("file moved successfully"),
+                    Err(error_code) => println!("and error occurred while relocating file: {}", error_code), // odmowa dostępu do mózgu kurwa
+                } // a nie, teraz error 5 a nie 123
+            },
             "time" | "clock" =>{
                 let current_time: DateTime<Local> = Local::now(); // chuj wie jak działa ale działa więc nie dotykać tego
                 println!("current time is {:?}", current_time);
@@ -303,12 +331,37 @@ fn main(){
             }
             "leave" | "exit" | "close" =>{
                 exit(0);
+                // unsafe { // jebać windowsa bo syscallsy są do dupy
+                //     asm!(
+                //         "syscall",
+                //         in("rax") 60,
+                //         in("rdi") 0,
+                //         out("rcx") _,
+                //         out("r11") _,
+                //     )
+                // }
             },
+            "shutdown" | "turnoff" =>{
+                match system_shutdown::shutdown(){
+                    Ok(_) => println!("shutting down!"),
+                    Err(error_code) => {
+                        println!("cannot shut machine down due to error: {}",error_code);
+                        thread::sleep(Duration::from_millis(150));
+                        println!("you can force shutdown using 'force shutdown'");
+                    },
+                }
+            },
+            "force shutdown" =>{ // of course not!
+                match system_shutdown::force_shutdown(){
+                    Ok(_) => println!("shutting down!"),
+                    Err(error_code) => println!("an error occurred while forcing shutdown: {}",error_code),
+                }
+            }
             "clear" | "cls" =>{
-                clear_screen();
+                clear_screen::clear();
             },
             "help" =>{
-              println!(" leave/exit/close - exit terminal\n clear/cls - clear screen\n mkdir/mdir/ndir/newdir - creates new empty directory\n nfile/newfile/touch - make file\n rm/remove/rmfile/rfile - remove single file\n rdir/rmdir/removedir/removedirectory - removes directory with all containing files\n cd/goto - change directory\n pwd/whereami/here - show working directory\n list/ls/listfiles/lsdir/listdirectory - shows files in directory\n time/clock - displays current time\n fread/read - prints file contains\n rename/rname - renames file/folder\n whoami/info/who - displays info about hardware and software\n history/history clear - shows/clears terminal history\n find/istherea - searches given phrase in specified file");
+              println!(" leave/exit/close - exit terminal\n clear/cls - clear screen\n mkdir/mdir/ndir/newdir - creates new empty directory\n nfile/newfile/touch - make file\n rm/remove/rmfile/rfile - remove single file\n rdir/rmdir/removedir/removedirectory - removes directory with all containing files\n cd/goto - change directory\n pwd/whereami/here - show working directory\n list/ls/listfiles/lsdir/listdirectory - shows files in directory\n time/clock - displays current time\n fread/read - prints file contains\n rename/rname - renames file/folder\n whoami/info/who - displays info about hardware and software\n history/history clear - shows/clears terminal history\n find/istherea - searches given phrase in specified file\n move/relocate/mv - moves file to another destination\n shutdown/turnoff - turns of your machine");
             },
             _ => {
                 println!("invalid option! type 'help' for full command list");
@@ -317,11 +370,11 @@ fn main(){
     }
 }
 
-fn clear_screen(){
-    if cfg!(target_os = "windows"){
-        Command::new("cmd").args(&["/C", "cls"]).status().unwrap();
-    }
-    else{
-        Command::new("clear").status().unwrap();
-    }
-}
+// fn clear_screen(){
+//     if cfg!(target_os = "windows"){
+//         Command::new("cmd").args(&["/C", "cls"]).status().unwrap();
+//     }
+//     else{
+//         Command::new("clear").status().unwrap();
+//     }
+// }
