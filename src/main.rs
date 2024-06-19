@@ -6,7 +6,9 @@
 use std::process::{Command, exit};
 use std::{fs, process, thread, vec};
 use std::arch::asm;
+use std::arch::x86_64::_mm_max_epi32;
 use std::env::{args, current_dir, current_exe};
+use std::fmt::format;
 use std::fs::{create_dir, read_dir, rename};
 use std::io::{BufRead, Read, read_to_string, stdout, Write};
 use std::iter::StepBy;
@@ -15,12 +17,15 @@ use std::thread::current;
 use std::time::{Duration, SystemTime};
 extern crate chrono;
 use chrono::prelude::*;
+use rand::Rng;
 use sysinfo::{Cpu, System};
 use sysinfo::Signal::Sys;
 extern crate whoami;
 use whoami::{fallible, platform};
 extern crate system_shutdown;
 extern crate clear_screen;
+mod manual_commands;
+mod features;
 
 fn main(){
     let mut terminal_history = vec![];
@@ -262,7 +267,7 @@ fn main(){
                     count+=1;
                     println!(" {}.volume: {:?}",count,disk);
                 }
-            }
+            },
             "find" | "istherea" =>{
                 println!("enter name of the file you want to check");
                 print!(">");
@@ -325,10 +330,10 @@ fn main(){
                     println!("\t{}.{}",history_count,i.trim());
                 }
                 println!("if you want to clear history, type 'history clear'");
-            }
+            },
             "history clear" =>{ // mama i tak się dowie
                 terminal_history.clear();
-            }
+            },
             "leave" | "exit" | "close" =>{
                 exit(0);
                 // unsafe { // jebać windowsa bo syscallsy są do dupy
@@ -341,7 +346,7 @@ fn main(){
                 //     )
                 // }
             },
-            "shutdown" | "turnoff" =>{
+            "shutdown" | "turnoff" =>{ // shotdown mate
                 match system_shutdown::shutdown(){
                     Ok(_) => println!("shutting down!"),
                     Err(error_code) => {
@@ -356,12 +361,24 @@ fn main(){
                     Ok(_) => println!("shutting down!"),
                     Err(error_code) => println!("an error occurred while forcing shutdown: {}",error_code),
                 }
-            }
+            },
             "clear" | "cls" =>{
                 clear_screen::clear();
             },
             "help" =>{
-              println!(" leave/exit/close - exit terminal\n clear/cls - clear screen\n mkdir/mdir/ndir/newdir - creates new empty directory\n nfile/newfile/touch - make file\n rm/remove/rmfile/rfile - remove single file\n rdir/rmdir/removedir/removedirectory - removes directory with all containing files\n cd/goto - change directory\n pwd/whereami/here - show working directory\n list/ls/listfiles/lsdir/listdirectory - shows files in directory\n time/clock - displays current time\n fread/read - prints file contains\n rename/rname - renames file/folder\n whoami/info/who - displays info about hardware and software\n history/history clear - shows/clears terminal history\n find/istherea - searches given phrase in specified file\n move/relocate/mv - moves file to another destination\n shutdown/turnoff - turns of your machine");
+              println!(" leave/exit/close - exit terminal\n clear/cls - clear screen\n mkdir/mdir/ndir/newdir - creates new empty directory\n nfile/newfile/touch - make file\n rm/remove/rmfile/rfile - remove single file\n rdir/rmdir/removedir/removedirectory - removes directory with all containing files\n cd/goto - change directory\n pwd/whereami/here - show working directory\n list/ls/listfiles/lsdir/listdirectory - shows files in directory\n time/clock - displays current time\n fread/read - prints file contains\n rename/rname - renames file/folder\n whoami/info/who - displays info about hardware and software\n history/history clear - shows/clears terminal history\n find/istherea - searches given phrase in specified file\n move/relocate/mv - moves file to another destination\n shutdown/turnoff - turns of your machine\n man (command) - displays manual of the command");
+            },
+            "matrix" =>{
+                features::matrix();
+            },
+            "man" =>{ // RTFM
+                println!("correct usage: 'man (command)'");
+            }
+            "man help"=>{ // pretty useless init?
+                manual_commands::help();
+            },
+            "man man" =>{ // man and man are men
+                println!("seriously mate?");
             },
             _ => {
                 println!("invalid option! type 'help' for full command list");
